@@ -679,7 +679,7 @@
                 statusDiv.innerHTML = '🤖 AI is reading your email and creating tasks...';
                 
                 try {
-                    const response = await fetch('/.netlify/functions/parse-email', {
+                    const response = await fetch('/api/parse-email', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
