@@ -1,6 +1,6 @@
 // netlify/functions/parse-email.js
 
-exports.handler = async (event, context) => {
+export default async function handler(req, res) {
   // Handle CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
