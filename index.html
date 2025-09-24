@@ -18,6 +18,86 @@
             min-height: 100vh;
         }
         
+        /* Password Protection Overlay */
+        .password-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            font-family: inherit;
+        }
+        
+        .password-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .password-box h2 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+        
+        .password-box p {
+            color: #7f8c8d;
+            margin-bottom: 25px;
+        }
+        
+        .password-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .password-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .password-submit {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .password-submit:hover {
+            background: #2980b9;
+        }
+        
+        .password-error {
+            color: #e74c3c;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .app-content {
+            display: none;
+        }
+        
+        .app-content.unlocked {
+            display: block;
+        }
+        
         .container {
             max-width: 1000px;
             margin: 0 auto;
@@ -470,62 +550,131 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 AI Project Checklist Manager</h1>
-            <p>Paste client emails and let AI create your task lists automatically!</p>
+    <!-- Password Protection Overlay -->
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-box">
+            <h2>🔒 Protected App</h2>
+            <p>Enter password to access your checklist manager</p>
+            <input 
+                type="password" 
+                class="password-input" 
+                id="passwordInput" 
+                placeholder="Password"
+                autocomplete="off"
+            >
+            <br>
+            <button class="password-submit" onclick="checkPassword()">Unlock</button>
+            <div class="password-error" id="passwordError">❌ Incorrect password. Try again.</div>
         </div>
-        
-        <!-- AI Email Parser Section -->
-        <div class="ai-section">
-            <h3>✨ AI Email Parser</h3>
-            <textarea 
-                class="email-input" 
-                id="emailInput" 
-                placeholder="Paste your client email with feedback and notes here...&#10;&#10;Example:&#10;Hey Luke,&#10;Just got the final feedback from CS!&#10;* 0:00 – Remove crop matte and adjust sequence size&#10;* 2:25 – Simon's title timing issue&#10;etc..."
-            ></textarea>
+    </div>
+
+    <!-- Main App Content -->
+    <div class="app-content" id="appContent">
+        <div class="container">
+            <div class="header">
+                <h1>🤖 AI Project Checklist Manager</h1>
+                <p>Paste client emails and let AI create your task lists automatically!</p>
+            </div>
             
-            <div class="ai-controls">
-                <select class="project-select" id="projectSelect">
-                    <option value="">Create new project...</option>
-                </select>
+            <!-- AI Email Parser Section -->
+            <div class="ai-section">
+                <h3>✨ AI Email Parser</h3>
+                <textarea 
+                    class="email-input" 
+                    id="emailInput" 
+                    placeholder="Paste your client email with feedback and notes here...&#10;&#10;Example:&#10;Hey Luke,&#10;Just got the final feedback from CS!&#10;* 0:00 – Remove crop matte and adjust sequence size&#10;* 2:25 – Simon's title timing issue&#10;etc..."
+                ></textarea>
                 
-                <button class="ai-parse-btn" id="parseBtn" onclick="parseEmailWithAI()">
-                    <span id="parseIcon">🤖</span>
-                    <span id="parseText">Parse with AI</span>
+                <div class="ai-controls">
+                    <select class="project-select" id="projectSelect">
+                        <option value="">Create new project...</option>
+                    </select>
+                    
+                    <button class="ai-parse-btn" id="parseBtn" onclick="parseEmailWithAI()">
+                        <span id="parseIcon">🤖</span>
+                        <span id="parseText">Parse with AI</span>
+                    </button>
+                </div>
+                
+                <div class="ai-status" id="aiStatus"></div>
+            </div>
+            
+            <div class="project-tabs" id="projectTabs">
+                <button class="add-project-btn" onclick="showAddProjectModal()">
+                    ➕ New Project
                 </button>
             </div>
             
-            <div class="ai-status" id="aiStatus"></div>
-        </div>
-        
-        <div class="project-tabs" id="projectTabs">
-            <button class="add-project-btn" onclick="showAddProjectModal()">
-                ➕ New Project
-            </button>
-        </div>
-        
-        <div id="projectsContainer">
-            <div class="empty-state">
-                <h3>🚀 Ready to get organized?</h3>
-                <p>Create your first project manually, or paste an email above to let AI create one for you!</p>
+            <div id="projectsContainer">
+                <div class="empty-state">
+                    <h3>🚀 Ready to get organized?</h3>
+                    <p>Create your first project manually, or paste an email above to let AI create one for you!</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Add Project Modal -->
-    <div class="modal" id="addProjectModal">
-        <div class="modal-content">
-            <h3>Create New Project</h3>
-            <input type="text" class="form-input" id="newProjectName" placeholder="Enter project name..." style="width: 100%; margin-bottom: 20px;">
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn btn-danger" onclick="hideAddProjectModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+        <!-- Add Project Modal -->
+        <div class="modal" id="addProjectModal">
+            <div class="modal-content">
+                <h3>Create New Project</h3>
+                <input type="text" class="form-input" id="newProjectName" placeholder="Enter project name..." style="width: 100%; margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn btn-danger" onclick="hideAddProjectModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+                </div>
             </div>
         </div>
-    </div>
+    </div> <!-- End app-content -->
 
     <script>
+        // Password protection
+        const CORRECT_PASSWORD = 'clientwork2024'; // Change this to your desired password
+        
+        function checkPassword() {
+            const input = document.getElementById('passwordInput');
+            const error = document.getElementById('passwordError');
+            const overlay = document.getElementById('passwordOverlay');
+            const appContent = document.getElementById('appContent');
+            
+            if (input.value === CORRECT_PASSWORD) {
+                // Store in session
+                sessionStorage.setItem('appUnlocked', 'true');
+                
+                // Hide overlay and show app
+                overlay.style.display = 'none';
+                appContent.classList.add('unlocked');
+                
+                // Initialize the app
+                if (!window.app) {
+                    app = new AIChecklistApp();
+                }
+            } else {
+                error.style.display = 'block';
+                input.value = '';
+                input.focus();
+            }
+        }
+        
+        // Check if already unlocked this session
+        function checkUnlocked() {
+            if (sessionStorage.getItem('appUnlocked') === 'true') {
+                document.getElementById('passwordOverlay').style.display = 'none';
+                document.getElementById('appContent').classList.add('unlocked');
+                return true;
+            }
+            return false;
+        }
+        
+        // Handle enter key on password input
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+        
+        // Auto-focus password input
+        document.getElementById('passwordInput').focus();
+
         class AIChecklistApp {
             constructor() {
                 this.projects = {};
@@ -877,7 +1026,10 @@
 
         // Initialize app
         document.addEventListener('DOMContentLoaded', function() {
-            app = new AIChecklistApp();
+            // Check if already unlocked
+            if (checkUnlocked()) {
+                app = new AIChecklistApp();
+            }
             
             document.getElementById('newProjectName').addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
