@@ -1,52 +1,33 @@
-// netlify/functions/parse-email.js
+// api/parse-email.js
 
-exports.handler = async (event, context) => {
+module.exports = async function handler(req, res) {
   // Handle CORS
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Content-Type': 'application/json'
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
 
   // Handle preflight request
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   // Only allow POST requests
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     // Parse the request body
-    const { emailContent } = JSON.parse(event.body);
+    const { emailContent } = req.body;
     
     if (!emailContent || !emailContent.trim()) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Email content is required' })
-      };
+      return res.status(400).json({ error: 'Email content is required' });
     }
 
     // Check for OpenAI API key
     const openaiApiKey = process.env.OPENAI_API_KEY;
     if (!openaiApiKey) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'OpenAI API key not configured' })
-      };
+      return res.status(500).json({ error: 'OpenAI API key not configured' });
     }
 
     // Create the prompt for OpenAI
@@ -127,11 +108,7 @@ ${emailContent}`;
         errorMessage = 'OpenAI API access denied. Please check your API key permissions.';
       }
       
-      return {
-        statusCode: response.status,
-        headers,
-        body: JSON.stringify({ error: errorMessage })
-      };
+      return res.status(response.status).json({ error: errorMessage });
     }
 
     const data = await response.json();
@@ -139,11 +116,7 @@ ${emailContent}`;
     // Extract the AI response
     const aiResponse = data.choices?.[0]?.message?.content;
     if (!aiResponse) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'No response from AI' })
-      };
+      return res.status(500).json({ error: 'No response from AI' });
     }
 
     // Parse the JSON response from AI
@@ -185,13 +158,9 @@ ${emailContent}`;
 
     // Validate the response structure
     if (!parsedResponse.tasks || !Array.isArray(parsedResponse.tasks)) {
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ 
-          error: 'AI response format was invalid. Please try again or check your email format.' 
-        })
-      };
+      return res.status(500).json({ 
+        error: 'AI response format was invalid. Please try again or check your email format.' 
+      });
     }
 
     // Clean up and validate tasks
@@ -204,35 +173,23 @@ ${emailContent}`;
       .slice(0, 20); // Limit to 20 tasks max
 
     if (cleanTasks.length === 0) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: 'No actionable tasks found in the email. Please check the content and try again.' 
-        })
-      };
+      return res.status(400).json({ 
+        error: 'No actionable tasks found in the email. Please check the content and try again.' 
+      });
     }
 
     // Return the parsed result
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({
-        projectName: parsedResponse.projectName || 'AI Generated Project',
-        tasks: cleanTasks,
-        originalTaskCount: parsedResponse.tasks.length
-      })
-    };
+    return res.status(200).json({
+      projectName: parsedResponse.projectName || 'AI Generated Project',
+      tasks: cleanTasks,
+      originalTaskCount: parsedResponse.tasks.length
+    });
 
   } catch (error) {
     console.error('Function error:', error);
     
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ 
-        error: 'Internal server error. Please try again.' 
-      })
-    };
+    return res.status(500).json({ 
+      error: 'Internal server error. Please try again.' 
+    });
   }
 };
